@@ -4,7 +4,7 @@
 
 # Overview
 
-If you want, you can clone all mvp repositorys including this repository with the command: ```mkdir -p gateway-api micro-auth-api micro-appointments-api micro-queue-api app && git clone https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-micro-gateway-api.git gateway-api && git clone https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-micro-auth-api.git micro-auth-api && git clone https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-micro-appointments-api.git micro-appointments-api && git clone https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-micro-queue-api.git micro-queue-api && git clone https://github.com/leonardopaiva/pucrio-mvp-front-end-advanced-app.git app```
+If you want, you can clone all mvp repositorys including this repository with the command: ```mkdir -p gateway-api micro-auth-api micro-appointments-api micro-queue-api app && git clone https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-micro-gateway-api.git gateway-api && git clone https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-micro-auth-api.git micro-auth-api && git clone https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-micro-appointments-api.git micro-appointments-api && git clone https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-micro-queue-api.git micro-queue-api && git clone https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-app app```
 
 Then cd to gateway-api folder and run ```docker-compose build up```
 
@@ -98,7 +98,7 @@ Thanks to the MVP professors, Marisa Silva, Dieinison Braga and Carlos Rocha.
 This is the third MVP of the Full Stack Development Postgraduate Program at PUCRS University, Rio de Janeiro.
 
 **Componente Principal Gateway Api**: [https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-micro-gateway-api](https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-micro-gateway-api)  
-**APP**: [https://github.com/leonardopaiva/pucrio-mvp-front-end-advanced-app](https://github.com/leonardopaiva/pucrio-mvp-front-end-advanced-app)  
+**APP**: [https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-app](https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-app)  
 **micro-auth-api**: [https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-micro-auth-api](https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-micro-auth-api)  
 **micro-queue-api**: [https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-micro-queue-api](https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-micro-queue-api)  
 **micro-appointments-api**: [https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-micro-appointments-api](https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-micro-appointments-api)  
