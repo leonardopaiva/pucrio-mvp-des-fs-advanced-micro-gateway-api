@@ -4,6 +4,9 @@
 
 # Overview
 
+If you want, you can clone all mvp repositorys including this repository with the command: ```mkdir -p gateway-api micro-auth-api micro-appointments-api micro-queue-api app && git clone https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-micro-gateway-api.git gateway-api && git clone https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-micro-auth-api.git micro-auth-api && git clone https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-micro-appointments-api.git micro-appointments-api && git clone https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-micro-queue-api.git micro-queue-api && git clone https://github.com/leonardopaiva/pucrio-mvp-front-end-advanced-app.git app
+```
+
 This is the main component of this MVP 3 from PUC Rio University, by student Leonardo Paiva. In this MVP, users can register appointments and work completely offline by saving their data in local storage when they are not connected to the internet. Later, they can access the action queue to synchronize their data in the database (using the micro-queue API and micro-appointments API). Users can register, update, delete, and view appointments in list view, map view (using the external Google Maps API), or on a calendar.
 
 Upon launching the app, the user must sign up and authenticate (via the micro-auth API), so that the appointments will be saved under their user ID. After that, all operations can be done offline and synchronized with the cloud as soon as the user wishes.
