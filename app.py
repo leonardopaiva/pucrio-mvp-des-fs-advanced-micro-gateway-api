@@ -1,321 +1,394 @@
+import os
+import json
+from flask import request, jsonify, redirect
 from flask_openapi3 import OpenAPI, Info, Tag
-from flask import redirect
-
-from schemas import *
-from services import *
-# from routes import *
 from flask_cors import CORS
+import requests
+import pudb
+import enum
+from datetime import datetime
 
-info = Info(title="Minha API", version="1.0.0")
+from models import GenericSchema, AuthHeader
+from schemas.queue import ProcessSyncSchema
+from schemas.event import EventBuscaIdSchema, EventSchema, EventBuscaSchema
+from services.token_service import verify_token
+from services.auth_service import (
+    login_auth,
+    reset_password_auth,
+    sign_up_auth,
+    confirm_sign_up_auth,
+    refresh_token_auth
+)
+from config import MICRO_QUEUE_API_URL, MICRO_APPOINTMENTS_URL
+from pydantic import BaseModel, Field
+
+# Default bearer token cache used when no Authorization header is provided.
+DEFAULT_BEARER_TOKEN_CACHE = os.getenv("DEFAULT_BEARER_TOKEN", "")
+
+info = Info(
+    title="Micro Gateway API",
+    version="1.0.0",
+    description=(
+        "# Important Note\n\n"
+        "This is the main component (microservice) of MVP 3. "
+        "It receives front-end requests and forwards them to other microservices, acting as a proxy to protect authenticated routes."
+    )
+)
 app = OpenAPI(__name__, info=info)
 CORS(app)
 
-# definindo tags
-home_tag = Tag(name="Documentação", description="Seleção de documentação: Swagger, Redoc ou RapiDoc")
-produto_tag = Tag(name="Produto", description="Adição, visualização e remoção de produtos à base (testado)") #testado
-event_tag = Tag(name="Event", description="Adição, visualização e remoção de events à base (testado)") #testado
-user_tag = Tag(name="User", description="Adição, visualização e remoção de users à base (testado)")  # testado
-doctor_tag = Tag(name="Doctor", description="Adição, visualização e remoção de doctors à base (testado)") # testado
-specialty_tag = Tag(name="Specialty", description="Adição, visualização e remoção de Specialties à base (testado)") #testado
-location_tag = Tag(name="Location", description="Adição, visualização e remoção de locations à base (testado)") # testado
-comentario_tag = Tag(name="Comentario", description="Adição de um comentário à um doctor ou event cadastrado na base")
+# Definition of tags for documentation
+auth_tag = Tag(
+    name="Micro Authentication API", 
+    description="Authentication routes for the micro‑auth‑api (you can log in, copy the token and set it to make the authenticated routes work; authentication is performed using Amazon Cognito, external API)"
+)
+queue_tag = Tag(
+    name="Micro Queue API", 
+    description="Endpoints for item synchronization (authentication required)"
+)
+appointments_tag = Tag(
+    name="Micro Appointments API", 
+    description="Endpoints for retrieving and manipulating appointments (authentication required)"
+)
 
-@app.get('/', tags=[home_tag])
-def home():
-    """Redireciona para /openapi, tela que permite a escolha do estilo de documentação.
+def json_converter(o):
+    if isinstance(o, enum.Enum):
+        return o.value
+    if isinstance(o, datetime):
+        return o.isoformat()
+    return str(o)
+
+class SetBearerTokenSchema(BaseModel):
+    new_token: str = Field(..., description="New AccessToken that will be used as the default in the gateway")
+
+# get_user_id_from_request
+# Extracts and validates the Authorization token from the incoming request,
+# then returns the user ID (from the token's 'sub' field) and the full header.
+# Steps:
+#   1. Attempt to get the "Authorization" header from the request.
+#   2. If missing, attempt to use the default bearer token.
+#   3. Validate that the header is in the format "Bearer <token>".
+#   4. Validate the token using `verify_token()`.
+#   5. Extract the "sub" field as user_id. All subsequent requests use this user_id.
+def get_user_id_from_request():
     """
+    Extracts and validates the Authorization token from the request and returns the user_id (from the 'sub' field)
+    along with the complete header. Raises an exception if anything is wrong.
+    """
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        # Use the default token if not provided
+        if not DEFAULT_BEARER_TOKEN_CACHE:
+            raise ValueError("Missing Authorization header")
+        auth_header = f"Bearer {DEFAULT_BEARER_TOKEN_CACHE}"
+    parts = auth_header.split()
+    if len(parts) != 2 or parts[0].lower() != "bearer":
+        raise ValueError("Invalid Authorization header format")
+    token = parts[1]
+    token_payload = verify_token(token)
+    if not token_payload:
+        raise ValueError("Invalid or expired token")
+    user_id = token_payload.get("sub")
+    if not user_id:
+        raise ValueError("User ID not found in token")
+    return user_id, auth_header
+
+@app.get('/')
+def home():
+    """Redirects to the OpenAPI documentation."""
     return redirect('/openapi')
 
+@app.get('/hello-world')
+def hello_world():
+    """Returns a simple hello world."""
+    print('testessssssss', flush=True)
+    return jsonify({"message": "Hello World"})
 
-@app.get('/hello', tags=[home_tag])
-def hello():
-    """Retorna um simples HTML com a mensagem Hello World"""
-    return """
-    <html>
-        <head>
-            <title>Hello World</title>
-        </head>
-        <body>
-            <h1>Hello World</h1>
-        </body>
-    </html>
+# ---- ******************* ----
+# MICRO AUTH API
+# ---- ******************* ----
+@app.post('/auth/login', tags=[auth_tag])
+def login(body: GenericSchema):
     """
+    Performs user login.
 
-#///////////////////////////////////////////////////////////////////////////////////////
-#PRODUTOS
-#///////////////////////////////////////////////////////////////////////////////////////
-@app.post('/produto', tags=[produto_tag],
-          responses={"200": ProdutoViewSchema, "409": ErrorSchema, "400": ErrorSchema})
-def add_produto(form: ProdutoSchema):
-    """Adiciona um novo Produto à base de dados
-
-    Retorna uma representação dos produtos e comentários associados.
+    Expected parameters (body):
+      - username: Example: "leonardopaiva.test@gmail.com"
+      - password: Example: "enter_your_password"
+      
+    Returns:
+      Access and refresh tokens if successful.
     """
-    return ProdutoService.add_produto(form)
+    payload = body.dict(exclude_unset=True)
+    headers = {"Content-Type": "application/json"}
+    data, status = login_auth(payload, headers)
+    return jsonify(data), status
 
-
-@app.get('/produtos', tags=[produto_tag],
-         responses={"200": ListagemProdutosSchema, "404": ErrorSchema})
-def get_produtos():
-    """Faz a busca por todos os Produto cadastrados
-
-    Retorna uma representação da listagem de produtos.
+@app.post('/auth/reset-password', tags=[auth_tag])
+def reset_password(body: GenericSchema):
     """
-    return ProdutoService.get_produtos()
-
-
-@app.get('/produto', tags=[produto_tag],
-         responses={"200": ProdutoViewSchema, "404": ErrorSchema})
-def get_produto(query: ProdutoBuscaSchema):
-    """Faz a busca por um Produto a partir do id do produto
-
-    Retorna uma representação dos produtos e comentários associados.
+    Initiates the user password reset process.
     """
-    return ProdutoService.get_produto(query)
+    payload = body.dict(exclude_unset=True)
+    headers = {"Content-Type": "application/json"}
+    data, status = reset_password_auth(payload, headers)
+    return jsonify(data), status
 
-
-@app.delete('/produto', tags=[produto_tag],
-            responses={"200": ProdutoDelSchema, "404": ErrorSchema})
-def del_produto(query: ProdutoBuscaSchema):
-    """Deleta um Produto a partir do nome de produto informado
-
-    Retorna uma mensagem de confirmação da remoção.
+@app.post('/auth/sign-up', tags=[auth_tag])
+def sign_up(body: GenericSchema):
     """
-    return ProdutoService.del_produto(query)
+    Registers a new user.
+
+    Expected parameters (body):
+      - name: The full name of the user.
+      - password: The user's password.
+      - username: The user's email (should be the same as the email field).
+      - email: The user's email.
+      
+    NOTE: The username field must be filled with the email.
     
-
-
-#///////////////////////////////////////////////////////////////////////////////////////
-#EVENTS
-#///////////////////////////////////////////////////////////////////////////////////////
-@app.post('/event', tags=[event_tag],
-          responses={"200": EventViewSchema, "409": ErrorSchema, "400": ErrorSchema})
-def add_event(form: EventSchema):
-    """Adiciona um novo Event à base de dados
-
-    Retorna uma representação dos events e comentários associados.
+    Returns:
+      JSON response indicating success or failure.
     """
-    return EventService.add_event(form)
+    payload = body.dict(exclude_unset=True)
+    headers = {"Content-Type": "application/json"}
+    data, status = sign_up_auth(payload, headers)
+    return jsonify(data), status
 
-
-@app.get('/events', tags=[event_tag],
-         responses={"200": ListagemEventsSchema, "404": ErrorSchema})
-def get_events():
-    """Faz a busca por todos os Event cadastrados
-
-    Retorna uma representação da listagem de events.
+@app.post('/auth/confirm-sign-up', tags=[auth_tag])
+def confirm_sign_up(body: GenericSchema):
     """
-    return EventService.get_events()
+    Confirms user registration.
 
-
-@app.get('/event', tags=[event_tag],
-         responses={"200": EventViewSchema, "404": ErrorSchema})
-def get_event(query: EventBuscaSchema):
-    """Faz a busca por um Event a partir do id do event
-
-    Retorna uma representação dos events e comentários associados.
+    Expected parameters (body):
+      - username: The user's email.
+      - confirmation_code: The confirmation code received via email.
+      
+    Returns:
+      A success message if the registration is confirmed.
     """
-    return EventService.get_event(query)
+    payload = body.dict(exclude_unset=True)
+    headers = {"Content-Type": "application/json"}
+    data, status = confirm_sign_up_auth(payload, headers)
+    return jsonify(data), status
 
-
-@app.delete('/event', tags=[event_tag],
-            responses={"200": EventDelSchema, "404": ErrorSchema})
-def del_event(query: EventBuscaSchema):
-    """Deleta um Event a partir do name de event informado
-
-    Retorna uma mensagem de confirmação da remoção.
+@app.post('/auth/refresh-token', tags=[auth_tag])
+def refresh_token(body: GenericSchema):
     """
-    return EventService.del_event(query)
+    Updates the access token.
 
-#///////////////////////////////////////////////////////////////////////////////////////
-#SPECIALTIES
-#///////////////////////////////////////////////////////////////////////////////////////
-@app.post('/specialty', tags=[specialty_tag],
-          responses={"200": SpecialtyViewSchema, "409": ErrorSchema, "400": ErrorSchema})
-def add_specialty(form: SpecialtySchema):
-    """Adiciona um novo Specialty à base de dados
-
-    Retorna uma representação dos specialties e comentários associados.
+    Expected parameters (body):
+      - username: Must be the user's email.
+      - refreshToken: Refresh token obtained during login.
+      
+    Returns:
+      A new access token if the operation is successful.
     """
-    return SpecialtyService.add_specialty(form)
+    payload = body.dict(exclude_unset=True)
+    headers = {"Content-Type": "application/json"}
+    data, status = refresh_token_auth(payload, headers)
+    if data.get("status") == "ok":
+        return jsonify(data.get("data", {})), status
+    else:
+        return jsonify(data), status
 
-
-@app.get('/specialties', tags=[specialty_tag],
-         responses={"200": ListagemSpecialtiesSchema, "404": ErrorSchema})
-def get_specialties():
-    """Faz a busca por todos os Specialty cadastrados
-
-    Retorna uma representação da listagem de specialties.
+# Set the bearer token useful for Swagger operations
+@app.post('/auth/set-bearer-token', tags=[auth_tag])
+def set_auth_bearer_token(body: SetBearerTokenSchema):
     """
-    return SpecialtyService.get_specialties()
+    Updates the global default Bearer token.
+
+    IMPORTANT:
+      Remove in production
+    """
+    global DEFAULT_BEARER_TOKEN_CACHE
+    DEFAULT_BEARER_TOKEN_CACHE = body.new_token
+    return jsonify({
+        "status": "ok",
+        "msg": "Bearer token updated successfully.",
+        "data": {"new_token": body.new_token}
+    }), 200
+
+# ---- ******************* ----
+# MICRO QUEUE API
+# ---- ******************* ----
+# Sends the queue data to the queue micro API.
+# This is the main route of this MVP, responsible for user data synchronization.
+@app.post(
+    '/queue/process-sync',
+    tags=[queue_tag],
+    description=(
+        """
+        {
+          "items": [
+            {
+              "id": "1",
+              "domain": "appointment",
+              "action": "create",
+              "data": { "key": "value" }
+            },
+            {
+              "id": "2",
+              "domain": "doctor",
+              "action": "update",
+              "data": { "key": "value" }
+            }
+          ]
+        }
+        """
+    )
+)
+def process_sync(body: ProcessSyncSchema):
+    """
+    Forwards the request to the micro-queue-api,
+    extracting the user ID from the Authorization token and inserting it into the "data" object of each item in the payload.
+    If the header is not provided, the updated default token is used.
+    """
+    payload = body.dict(exclude_unset=True)
+    try:
+        user_id, auth_value = get_user_id_from_request()
+    except Exception as e:
+        return jsonify({"status": "error", "msg": str(e), "data": {}}), 401
+
+    items = payload.get("items", [])
+    for idx, item in enumerate(items):
+        if isinstance(item, dict):
+            if "data" not in item or not isinstance(item["data"], dict):
+                item["data"] = {}
+            item["data"]["user_id"] = user_id
+        else:
+            return jsonify({"status": "error", "msg": f"Item at index {idx} is not a valid object", "data": {}}), 400
+    payload["items"] = items
+
+    try:
+        payload = json.loads(json.dumps(payload, default=json_converter))
+    except Exception as e:
+        return jsonify({"status": "error", "msg": f"Error serializing payload: {str(e)}", "data": {}}), 500
+
+    headers = {"Content-Type": "application/json", "Authorization": auth_value}
+    try:
+        response = requests.post(f"{MICRO_QUEUE_API_URL}/process-sync", json=payload, headers=headers)
+        response_data = response.json()
+        if any("error" in item for item in response_data.get("data", [])):
+            return jsonify({
+                "status": "error",
+                "msg": "Some items failed to process.",
+                "data": response_data.get("data", [])
+            }), 400
+        return jsonify(response_data), response.status_code
+    except Exception as e:
+        return jsonify({"status": "error", "msg": str(e), "data": {}}), 500
+
+# ---- ******************* ----
+# MICRO APPOINTMENTS API
+# ---- ******************* ----
+@app.get(
+    '/appointments',
+    tags=[appointments_tag],
+    description=(
+        """
+        Retrieves the user's appointments.
+        """
+    )
+)
+def get_appointments():
+    """
+    Retrieves the list of appointments for the authenticated user.
+    """
+    try:
+        user_id, auth_value = get_user_id_from_request()
+    except Exception as e:
+        return jsonify({"status": "error", "msg": str(e), "data": {}}), 401
+
+    url = f"{MICRO_APPOINTMENTS_URL.rstrip('/')}/appointments?user_id={user_id}"
+    headers = {"Authorization": auth_value}
+    try:
+        response = requests.get(url, headers=headers)
+        if response.status_code != 200:
+            return jsonify(response.json()), response.status_code
+        return jsonify(response.json()), 200
+    except Exception as e:
+        return jsonify({"status": "error", "msg": str(e), "data": {}}), 500
+
+@app.delete(
+    '/appointment',
+    tags=[appointments_tag],
+    description=(
+        """
+        Deletes a specific appointment for the user.
+        """
+    )
+)
+def delete_appointment(query: EventBuscaIdSchema):
+    """
+    Deletes a specific appointment for the authenticated user.
+    """
+    try:
+        user_id, auth_value = get_user_id_from_request()
+    except Exception as e:
+        return jsonify({"status": "error", "msg": str(e), "data": {}}), 401
+
+    appointment_id = query.id
+    url = f"{MICRO_APPOINTMENTS_URL.rstrip('/')}/appointment?id={appointment_id}&user_id={user_id}"
+    headers = {"Authorization": auth_value}
+    try:
+        response = requests.delete(url, headers=headers)
+        return jsonify(response.json()), response.status_code
+    except Exception as e:
+        return jsonify({"status": "error", "msg": str(e), "data": {}}), 500
+
+@app.post('/appointment', tags=[appointments_tag],
+          description="Forwards the create appointment request to the micro‑appointments‑api.")
+def create_appointment(body: EventSchema):
+    """
+    Creates a new appointment.
+
+    This endpoint extracts the user_id from the Authorization token and inserts it into the payload
+    sent to the micro‑appointments‑api, ensuring that the appointment belongs to the authenticated user.
+    """
+    try:
+        user_id, auth_value = get_user_id_from_request()
+    except Exception as e:
+        return jsonify({"status": "error", "msg": str(e), "data": {}}), 401
+
+    payload = body.dict(exclude_unset=True)
+    payload["user_id"] = user_id
+
+    payload = json.loads(json.dumps(payload, default=json_converter))
     
+    headers = {"Content-Type": "application/json", "Authorization": auth_value}
+    try:
+        response = requests.post(f"{MICRO_APPOINTMENTS_URL.rstrip('/')}/appointment", json=payload, headers=headers)
+        return jsonify(response.json()), response.status_code
+    except Exception as e:
+        return jsonify({"status": "error", "msg": str(e), "data": {}}), 500
 
-
-@app.get('/specialty', tags=[specialty_tag],
-         responses={"200": SpecialtyViewSchema, "404": ErrorSchema})
-def get_specialty(query: SpecialtyBuscaSchema):
-    """Faz a busca por um Specialty a partir do name do specialty
-
-    Retorna uma representação dos specialties e comentários associados.
+@app.put('/appointment', tags=[appointments_tag],
+         description="Forwards the update appointment request to the micro‑appointments‑api.")
+def update_appointment(query: EventBuscaSchema, body: EventSchema):
     """
-    return SpecialtyService.get_specialty(query)
+    Updates an existing appointment.
 
-
-@app.delete('/specialty', tags=[specialty_tag],
-            responses={"200": SpecialtyDelSchema, "404": ErrorSchema})
-def del_specialty(query: SpecialtyBuscaSchema):
-    """Deleta um Specialty a partir do name de specialty informado
-
-    Retorna uma mensagem de confirmação da remoção.
+    This endpoint extracts the user_id from the Authorization token and updates the query parameter,
+    ensuring that only appointments belonging to the authenticated user are updated.
     """
-    return SpecialtyService.del_specialty(query)
+    try:
+        user_id, auth_value = get_user_id_from_request()
+    except Exception as e:
+        return jsonify({"status": "error", "msg": str(e), "data": {}}), 401
 
-#///////////////////////////////////////////////////////////////////////////////////////
-#LOCATIONS
-#///////////////////////////////////////////////////////////////////////////////////////
-@app.post('/location', tags=[location_tag],
-          responses={"200": LocationViewSchema, "409": ErrorSchema, "400": ErrorSchema})
-def add_location(form: LocationSchema):
-    """Adiciona um novo Location à base de dados
+    query.user_id = user_id
+    payload = body.dict(exclude_unset=True)
 
-    Retorna uma representação dos locations e comentários associados.
-    """
-    return LocationService.add_location(form)
-
-
-@app.get('/locations', tags=[location_tag],
-         responses={"200": ListagemLocationsSchema, "404": ErrorSchema})
-def get_locations():
-    """Faz a busca por todos os Location cadastrados
-
-    Retorna uma representação da listagem de locations.
-    """
-    return LocationService.get_locations()    
-
-
-@app.get('/location', tags=[location_tag],
-         responses={"200": LocationViewSchema, "404": ErrorSchema})
-def get_location(query: LocationBuscaSchema):
-    """Faz a busca por um Location a partir do id do location
-
-    Retorna uma representação dos locations e comentários associados.
-    """
-    return LocationService.get_location(query)
-
-
-@app.delete('/location', tags=[location_tag],
-            responses={"200": LocationDelSchema, "404": ErrorSchema})
-def del_location(query: LocationBuscaSchema):
-    """Deleta um Location a partir do name de location informado
-
-    Retorna uma mensagem de confirmação da remoção.
-    """
-    return LocationService.del_location(query)
-
-#///////////////////////////////////////////////////////////////////////////////////////
-#DOCTORS
-#///////////////////////////////////////////////////////////////////////////////////////
-@app.post('/doctor', tags=[doctor_tag],
-          responses={"200": DoctorViewSchema, "409": ErrorSchema, "400": ErrorSchema})
-def add_doctor(form: DoctorSchema):
-    """Adiciona um novo Doctor à base de dados
-
-    Retorna uma representação dos doctors e comentários associados.
-    """
-    return DoctorService.add_doctor(form)
-
-
-@app.get('/doctors', tags=[doctor_tag],
-         responses={"200": ListagemDoctorsSchema, "404": ErrorSchema})
-def get_doctors():
-    """Faz a busca por todos os Doctor cadastrados
-
-    Retorna uma representação da listagem de doctors.
-    """
-    return DoctorService.get_doctors()
-
-
-@app.get('/doctor', tags=[doctor_tag],
-         responses={"200": DoctorViewSchema, "404": ErrorSchema})
-def get_doctor(query: DoctorBuscaSchema):
-    """Faz a busca por um Doctor a partir do id do doctor
-
-    Retorna uma representação dos doctors e comentários associados.
-    """
-    return DoctorService.get_doctor(query)
-
-
-@app.delete('/doctor', tags=[doctor_tag],
-            responses={"200": DoctorDelSchema, "404": ErrorSchema})
-def del_doctor(query: DoctorBuscaSchema):
-    """Deleta um Doctor a partir do name de doctor informado
-
-    Retorna uma mensagem de confirmação da remoção.
-    """
-    return DoctorService.del_doctor(query)
-
+    payload = json.loads(json.dumps(payload, default=json_converter))
     
-#///////////////////////////////////////////////////////////////////////////////////////
-#USERS
-#///////////////////////////////////////////////////////////////////////////////////////
-@app.post('/user', tags=[user_tag],
-          responses={"200": UserViewSchema, "409": ErrorSchema, "400": ErrorSchema})
-def add_user(form: UserSchema):
-    """Adiciona um novo User à base de dados
+    headers = {"Content-Type": "application/json", "Authorization": auth_value}
+    url = f"{MICRO_APPOINTMENTS_URL.rstrip('/')}/appointment?id={query.id}&user_id={user_id}"
+    try:
+        response = requests.put(url, json=payload, headers=headers)
+        return jsonify(response.json()), response.status_code
+    except Exception as e:
+        return jsonify({"status": "error", "msg": str(e), "data": {}}), 500
 
-    Retorna uma representação dos users e comentários associados.
-    """
-    return UserService.add_user(form)
-
-
-@app.get('/users', tags=[user_tag],
-         responses={"200": ListagemUsersSchema, "404": ErrorSchema})
-def get_users():
-    """Faz a busca por todos os User cadastrados
-
-    Retorna uma representação da listagem de users.
-    """
-    UserService.get_users()
-
-
-@app.get('/user', tags=[user_tag],
-         responses={"200": UserViewSchema, "404": ErrorSchema})
-def get_user(query: UserBuscaSchema):
-    """Faz a busca por um User a partir do id do user
-
-    Retorna uma representação dos users e comentários associados.
-    """
-    return UserService.get_user(query)
-
-
-@app.delete('/user', tags=[user_tag],
-            responses={"200": UserDelSchema, "404": ErrorSchema})
-def del_user(query: UserBuscaSchema):
-    """Deleta um User a partir do name de user informado
-
-    Retorna uma mensagem de confirmação da remoção.
-    """
-    return UserService.del_user(query)
-
-
-#///////////////////////////////////////////////////////////////////////////////////////
-#COMENTARIOS
-#///////////////////////////////////////////////////////////////////////////////////////
-@app.post('/comentario/doctor', tags=[comentario_tag],
-          responses={"200": DoctorViewSchema, "404": ErrorSchema})
-def add_comentario_doctor(form: ComentarioSchema):
-    """Adição de um novo comentário à um doctor cadastrado na base identificado pelo id
-
-    Retorna uma representação do doctor e comentários associados.
-    """
-    return DoctorService.add_comentario(form)
-
-@app.post('/comentario/event', tags=[comentario_tag],
-          responses={"200": DoctorViewSchema, "404": ErrorSchema})
-def add_comentario_event(form: ComentarioSchema):
-    """Adição de um novo comentário à um event cadastrado na base identificado pelo id
-
-    Retorna uma representação do event e comentários associados.
-    """
-    return EventService.add_comentario(form)
-    
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)

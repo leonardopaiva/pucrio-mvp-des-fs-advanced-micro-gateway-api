@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  micro-auth-tests:
+    build:
+      context: ../micro-auth-api
+      dockerfile: Dockerfile
+    volumes:
+      - ../micro-auth-api:/app
+    env_file:
+      - .env
+    command: python3 -m pytest -v tests/test_auth.py || true
+    depends_on:
+      - micro-auth-api
+    networks:
+      minha-rede:
+        aliases:
+          - micro-auth
+
+  micro-appointments-tests:
+    build:
+      context: ../micro-appointments-api
+      dockerfile: Dockerfile
+    volumes:
+      - ../micro-appointments-api:/app
+    env_file:
+      - .env
+    command: python3 -m pytest -v tests/test_appointments.py || true
+    depends_on:
+      - micro-appointments-api
+    networks:
+      minha-rede:
+        aliases:
+          - micro-appointments
+
+networks:
+  minha-rede:
+    driver: bridge

@@ -1,105 +1,73 @@
-from pydantic import BaseModel
-from typing import Optional, List
-from model.event import Event, EventType
 from datetime import datetime
 from enum import Enum
+from typing import Optional, List, Any
+from pydantic import BaseModel, Field
 
-from schemas import ComentarioSchema
 
+class EventType(Enum):
+    CONSULTATION = 1
+    EXAM = 2
 
 class EventSchema(BaseModel):
-    """ Define como um novo event a ser inserido deve ser representado
     """
-    #optei por usar name, poderia ser title, mas achei interessante manter 
-    #o padrao em relacao aos outros modulos
-    name: str = "Consulta Dermatologista"
-    description: str = "A consulta será por ordem de chegada"
-    observation: str = "Vou precisar de ajuda para ir até a consulta porque o carro está quebrado"
-    date: datetime = datetime.now()
-    doctor_name: str = "Doutor Matheus"
-    location_name: str = "memorial são jose recife 83"
-    location_id: int = 1
-    doctor_id: int = 1
-    user_id: int = 1
-    type: EventType = EventType.CONSULTATION
-
+    Defines how a new event to be inserted should be represented.
+    The "id" field is optional, as it can be generated automatically (e.g., UUID).
+    """
+    id: Optional[str] = Field(None, description="Event ID (automatically generated if not provided)")
+    name: str = Field("Consulta Dermatologista", description="Name of the event")
+    description: str = Field("A consulta será por ordem de chegada", description="Description of the event")
+    observation: str = Field("Vou precisar de ajuda para ir até a consulta porque o carro está quebrado",
+                             description="Observation regarding the event")
+    date: datetime = Field(default_factory=datetime.now, description="Event date and time")
+    doctor_name: str = Field("Doutor Matheus", description="Doctor's name")
+    location_name: str = Field("memorial são jose recife 83", description="Location name")
+    location_id: int = Field(1, description="Location ID")
+    doctor_id: int = Field(1, description="Doctor ID")
+    user_id: str = Field("default_user_id", description="User ID associated with the event")
+    type: EventType = Field(EventType.CONSULTATION, description="Type of the event (e.g., CONSULTATION or EXAM)")
 
 class EventBuscaSchema(BaseModel):
-    """ Define como deve ser a estrutura que representa a busca. Que será
-        feita apenas com base no name do event.
     """
-    name: str = "Consulta Dermatologista"
+    Defines the structure representing a search,
+    using the "id" and "user_id" fields.
+    """
+    id: str = Field("1", description="Event ID to be searched")
+    user_id: str = Field("54e8a4a8-5001-7018-8eec-ce6b634cded9", description="User ID of the event owner")
 
+class EventBuscaIdSchema(BaseModel):
+    """
+    Defines the structure representing a search based solely on the event ID.
+    """
+    id: str = Field("1", description="Event ID")
 
 class ListagemEventsSchema(BaseModel):
-    """ Define como uma listagem de events será retornada.
     """
-    events:List[EventSchema]
-
-
-def apresenta_events(events: List[Event]):
-    """ Retorna uma representação do event seguindo o schema definido em
-        EventViewSchema.
+    Defines how a listing of events will be returned.
     """
-    result = []
-    for event in events:
-        result.append({
-            "name": event.name,
-            "description": event.description,
-            "observation": event.observation,
-            "date": event.date,
-            "doctor_name": event.doctor_name,
-            "location_name": event.location_name,
-            "location_id": event.location_id,
-            "doctor_id": event.doctor_id,
-            "user_id": event.user_id,
-            "type": event.type,
-        })
-
-    return {"events": result}
-
+    events: List[EventSchema] = Field(..., description="List of events")
 
 class EventViewSchema(BaseModel):
-    """ Define como um event será retornado: event + comentários.
     """
-    id: int = 1
-    name: str = "Consulta Dermatologista"
-    description: str = "A consulta será por ordem de chegada"
-    observation: str = "Vou precisar de ajuda para ir até a consulta porque o carro está quebrado"
-    date: datetime = datetime.now()
-    doctor_name: str = "Doutor Matheus"
-    location_name: str = "memorial são jose recife 83"
-    location_id: int = 1
-    doctor_id: int = 1
-    user_id: int = 1
-    type: EventType = EventType.CONSULTATION
-    total_cometarios: int = 1
-    comentarios:List[ComentarioSchema]
-
+    Defines how an event will be returned, including comments.
+    """
+    id: str = Field("1", description="Event ID")
+    name: str = Field("Consulta Dermatologista", description="Name of the event")
+    description: str = Field("A consulta será por ordem de chegada", description="Description of the event")
+    observation: str = Field("Vou precisar de ajuda para ir até a consulta porque o carro está quebrado",
+                             description="Event observation")
+    date: datetime = Field(default_factory=datetime.now, description="Event date and time")
+    doctor_name: str = Field("Doutor Matheus", description="Doctor's name")
+    location_name: str = Field("memorial são jose recife 83", description="Location name")
+    location_id: int = Field(1, description="Location ID")
+    doctor_id: int = Field(1, description="Doctor ID")
+    user_id: str = Field("default_user_id", description="User ID associated with the event")
+    type: EventType = Field(EventType.CONSULTATION, description="Type of the event")
+    total_cometarios: int = Field(1, description="Total comments associated with the event")
+    comentarios: List[Any] = Field([], description="List of comments (each comment can be represented as a dictionary)")
 
 class EventDelSchema(BaseModel):
-    """ Define como deve ser a estrutura do dado retornado após uma requisição
-        de remoção.
     """
-    mesage: str
-    name: str
-
-def apresenta_event(event: Event):
-    """ Retorna uma representação do event seguindo o schema definido em
-        EventViewSchema.
+    Defines the structure of the data returned after a removal request.
     """
-    return {
-        "id": event.id,
-        "name": event.name,
-        "description": event.description,
-        "observation": event.observation,
-        "date": event.date,
-        "doctor_name": event.doctor_name,
-        "location_name": event.location_name,
-        "location_id": event.location_id,
-        "doctor_id": event.doctor_id,
-        "user_id": event.user_id,
-        "type": event.type,
-        "total_cometarios": len(event.comentarios),
-        "comentarios": [{"texto": c.texto} for c in event.comentarios]
-    }
+    mesage: str = Field(..., description="Return message")
+    name: str = Field(..., description="Name of the removed event")

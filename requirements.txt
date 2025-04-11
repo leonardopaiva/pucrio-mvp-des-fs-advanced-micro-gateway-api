@@ -7,3 +7,7 @@ pydantic
 SQLAlchemy
 SQLAlchemy-Utils
 typing_extensions
+boto3
+python-jose[cryptography]
+requests
+pudb
