@@ -1,4 +1,4 @@
-# Micro Gateway API
+# MVP 3 PUC Rio - Micro Gateway API
  
 ---
 
@@ -12,7 +12,7 @@ The purpose of this micro-gateway-api is to consolidate information for all the 
  
 This microservice is responsible for receiving all requests from the front-end and forwarding them to their respective microservices, thus acting as a gateway. It features routes for the following microservices: micro-auth-api (user login and registration), micro-queue-api (processing the synchronization queue for user data), and micro-appointments-api, to save the appointment data directly (CREATE, PUT, DELETE, GET)
 
-***Access the port of this microservice and you will have a Swagger interface to perform operations without depending on the front-end.***
+***Access the port of this microservice and you will have a Swagger interface to perform operations without depending on the front-end. something like http://localhost:5050***
  
 # Project Setup Instructions
 
@@ -42,7 +42,7 @@ Below is a command that will clone all the repositories and place them in their 
 
 **3. Verify Docker Functionality and Run Containers**
 
-Next, ensure that your Docker is working and that you are able to create containers. And make sure that the dist folder is inside app folder, if not, run ```npm run pwa``` inside app folder.
+Next, ensure that your Docker is working and that you are able to create containers. ***And make sure that the dist folder is inside app folder***, if not, run ```npm run pwa``` inside app folder.
 If everything is set up correctly, run the following command:
 
     ```docker compose up --build```
@@ -81,9 +81,9 @@ or
 Open [http://localhost:5000/#/](http://localhost:5000/#/) in your browser to check the API status.
 
 ## Tests
-when the containers are running, you can run this command in a separate terminal:
-```docker-compose exec micro-auth-api pytest -v tests/test_auth.py```
-```docker-compose exec micro-appointments-api pytest -v tests/test_appointments.py```
+when the containers are running, you can run this command in a separate terminal:  
+```docker-compose exec micro-auth-api pytest -v tests/test_auth.py```   
+```docker-compose exec micro-appointments-api pytest -v tests/test_appointments.py```   
 
 # Thanks to the MVP professors
 
@@ -92,6 +92,13 @@ Thanks to the MVP professors, Marisa Silva, Dieinison Braga and Carlos Rocha.
 ## About This Project
  
 This is the third MVP of the Full Stack Development Postgraduate Program at PUCRS University, Rio de Janeiro.
+
+**Componente Principal Gateway Api**: [https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-micro-gateway-api](https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-micro-gateway-api)
+**APP**: [https://github.com/leonardopaiva/pucrio-mvp-front-end-advanced-app](https://github.com/leonardopaiva/pucrio-mvp-front-end-advanced-app)
+**micro-auth-api**: [https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-micro-auth-api](https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-micro-auth-api)
+**micro-queue-api**: [https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-micro-queue-api](https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-micro-queue-api)
+**micro-appointments-api**: [https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-micro-appointments-api](https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-micro-appointments-api)
+
  
 **Student**: Leonardo Souza Paiva  
 **Portfolio**: [www.leonardopaiva.com](http://www.leonardopaiva.com)
