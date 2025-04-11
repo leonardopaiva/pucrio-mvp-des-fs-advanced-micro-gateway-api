@@ -10,15 +10,15 @@ Upon launching the app, the user must sign up and authenticate (via the micro-au
 
 The purpose of this micro-gateway-api is to consolidate information for all the microservices and the app. It should be used as a starting point and includes links to all of them, configuration details, and commands to clone them. 
  
-This microservice is responsible for receiving all requests from the front-end and forwarding them to their respective microservices, thus acting as a gateway. It features routes for the following microservices: micro-auth-api (user login and registration), micro-queue-api (processing the synchronization queue for user data), and micro-appointments-api, currently used only for GET operations, as the data is saved through micro-queue.
+This microservice is responsible for receiving all requests from the front-end and forwarding them to their respective microservices, thus acting as a gateway. It features routes for the following microservices: micro-auth-api (user login and registration), micro-queue-api (processing the synchronization queue for user data), and micro-appointments-api, to save the appointment data directly (CREATE, PUT, DELETE, GET)
 
-Access the port of this microservice and you will have a Swagger interface to perform operations without depending on the front-end.
+***Access the port of this microservice and you will have a Swagger interface to perform operations without depending on the front-end.***
  
 # Project Setup Instructions
 
 **1. Configure Environment Variables**
 
-- Rename the .env.demo file to .env
+- ***Rename the .env.demo file to .env***
 - Set the values for the environment variables present in the file.  
   This is necessary because user authentication and registration are performed through Amazon Cognito.
 - Create a user pool in Cognito (NOT necessary for mvp professors).  
@@ -42,7 +42,7 @@ Below is a command that will clone all the repositories and place them in their 
 
 **3. Verify Docker Functionality and Run Containers**
 
-Next, ensure that your Docker is working and that you are able to create containers.  
+Next, ensure that your Docker is working and that you are able to create containers. And make sure that the dist folder is inside app folder, if not, run ```npm run pwa``` inside app folder.
 If everything is set up correctly, run the following command:
 
     ```docker compose up --build```
