@@ -89,6 +89,10 @@ when the containers are running, you can run this command in a separate terminal
 ```docker-compose exec micro-auth-api pytest -v tests/test_auth.py```   
 ```docker-compose exec micro-appointments-api pytest -v tests/test_appointments.py```   
 
+# MVP Architecture
+
+![MVP Architecture](architecture.png)
+
 # Thanks to the MVP professors
 
 Thanks to the MVP professors, Marisa Silva, Dieinison Braga and Carlos Rocha.
