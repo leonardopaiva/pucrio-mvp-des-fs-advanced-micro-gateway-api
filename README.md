@@ -4,10 +4,6 @@
 
 # Overview
 
-If you want, you can clone all mvp repositorys including this repository with the command: ```mkdir -p gateway-api micro-auth-api micro-appointments-api micro-queue-api app && git clone https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-micro-gateway-api.git gateway-api && git clone https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-micro-auth-api.git micro-auth-api && git clone https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-micro-appointments-api.git micro-appointments-api && git clone https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-micro-queue-api.git micro-queue-api && git clone https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-app app```
-
-Then cd to gateway-api folder and run ```docker-compose build up```
-
 This is the main component of this MVP 3 from PUC Rio University, by student Leonardo Paiva. In this MVP, users can register appointments and work completely offline by saving their data in local storage when they are not connected to the internet. Later, they can access the action queue to synchronize their data in the database (using the micro-queue API and micro-appointments API). Users can register, update, delete, and view appointments in list view, map view (using the external Google Maps API), or on a calendar.
 
 Upon launching the app, the user must sign up and authenticate (via the micro-auth API), so that the appointments will be saved under their user ID. After that, all operations can be done offline and synchronized with the cloud as soon as the user wishes.
@@ -43,6 +39,10 @@ This microservice is responsible for receiving all requests from the front-end a
   - /app for the front-end app
 
 Below is a command that will clone all the repositories and place them in their respective folders at once.
+
+```mkdir -p gateway-api micro-auth-api micro-appointments-api micro-queue-api app && git clone https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-micro-gateway-api.git gateway-api && git clone https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-micro-auth-api.git micro-auth-api && git clone https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-micro-appointments-api.git micro-appointments-api && git clone https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-micro-queue-api.git micro-queue-api && git clone https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-app app```
+
+Then cd to gateway-api folder and run ```docker-compose up --build```  
 
 **3. Verify Docker Functionality and Run Containers**
 
@@ -101,12 +101,14 @@ Thanks to the MVP professors, Marisa Silva, Dieinison Braga and Carlos Rocha.
  
 This is the third MVP of the Full Stack Development Postgraduate Program at PUCRS University, Rio de Janeiro.
 
-**Componente Principal Gateway Api**: [https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-micro-gateway-api](https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-micro-gateway-api)  
+**Main Component Gateway Api**: [https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-micro-gateway-api](https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-micro-gateway-api)  
 **APP**: [https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-app](https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-app)  
 **micro-auth-api**: [https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-micro-auth-api](https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-micro-auth-api)  
 **micro-queue-api**: [https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-micro-queue-api](https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-micro-queue-api)  
 **micro-appointments-api**: [https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-micro-appointments-api](https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-micro-appointments-api)  
 
+**youtube video presenting project**: [https://youtu.be/7QQ_WHTqXxk](https://youtu.be/7QQ_WHTqXxk)  
+**Live demo APP**: [https://pucriomvp3.leonardopaiva.com/](https://pucriomvp3.leonardopaiva.com/)  
  
 **Student**: Leonardo Souza Paiva  
 **Portfolio**: [www.leonardopaiva.com](http://www.leonardopaiva.com)
