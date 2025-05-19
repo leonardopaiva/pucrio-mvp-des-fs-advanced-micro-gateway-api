@@ -7,7 +7,7 @@ services:
     image: gateway-api:prod
     env_file:
       - .env
-    command: gunicorn -w 2 -b 0.0.0.0:5000 app:app
+    command: gunicorn -b 0.0.0.0:5000 app:app
     restart: always
     mem_limit: 300m
     ports:
@@ -23,7 +23,7 @@ services:
     image: micro-auth-api:prod
     env_file:
       - .env
-    command: gunicorn -w 1 -b 0.0.0.0:5000 app:app
+    command: gunicorn -b 0.0.0.0:5000 app:app
     restart: always
     mem_limit: 150m
     ports:
@@ -39,7 +39,7 @@ services:
     image: micro-appointments-api:prod
     env_file:
       - .env
-    command: gunicorn -w 1 -b 0.0.0.0:5000 app:app
+    command: gunicorn -b 0.0.0.0:5000 app:app
     restart: always
     mem_limit: 200m
     ports:
@@ -55,7 +55,7 @@ services:
     image: micro-queue-api:prod
     env_file:
       - .env
-    command: gunicorn -w 1 -b 0.0.0.0:5000 app:app
+    command: gunicorn -b 0.0.0.0:5000 app:app
     restart: always
     mem_limit: 150m
     ports:
