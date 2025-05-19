@@ -2,64 +2,92 @@ version: '3.8'
 
 services:
   gateway-api:
-    build:
-      context: ../gateway-api
-    image: gateway-api:prod
-    env_file:
-      - .env
-    command: gunicorn -b 0.0.0.0:5000 app:app
-    restart: always
-    mem_limit: 300m
+    build: ./
     ports:
       - "5050:5000"
+    volumes:
+      - ../gateway-api:/app
+    restart: always
+    env_file:
+      - .env
+    environment:
+      - FLASK_APP=app.py
+      - FLASK_ENV=development
+      - SECRET_KEY=${COGNITO_APP_CLIENT_SECRET}
+      - MICRO_APPOINTMENTS_URL=http://micro-appointments:5000
+      - MICRO_DOCTORS_URL=http://micro-doctors:5000
+      - MICRO_ADDRESS_URL=http://micro-address:5000
+      - MICRO_QUEUE_API_URL=http://micro-queue:5000
+      - MICRO_AUTH_API_URL=http://micro-auth:5000
+      - COGNITO_USER_POOL_ID=${COGNITO_USER_POOL_ID}
+      - COGNITO_APP_CLIENT_ID=${COGNITO_APP_CLIENT_ID}
+      - COGNITO_ISSUER=https://cognito-idp.${AWS_REGION}.amazonaws.com/${COGNITO_USER_POOL_ID}
+      - AWS_REGION=${AWS_REGION}
+      - DEFAULT_BEARER_TOKEN=${DEFAULT_BEARER_TOKEN3}
+    command: gunicorn -b 0.0.0.0:5000 app:app
+    stdin_open: true
+    tty: true
     networks:
       minha-rede:
         aliases:
           - gateway
 
   micro-auth-api:
-    build:
-      context: ../micro-auth-api
-    image: micro-auth-api:prod
-    env_file:
-      - .env
-    command: gunicorn -b 0.0.0.0:5000 app:app
-    restart: always
-    mem_limit: 150m
+    build: ../micro-auth-api
     ports:
       - "5052:5000"
+    volumes:
+      - ../micro-auth-api:/app
+    restart: always
+    env_file:
+      - .env
+    environment:
+      - FLASK_APP=app.py
+      - FLASK_ENV=development
+    command: gunicorn -b 0.0.0.0:5000 app:app
+    stdin_open: true
+    tty: true
     networks:
       minha-rede:
         aliases:
           - micro-auth
 
   micro-appointments-api:
-    build:
-      context: ../micro-appointments-api
-    image: micro-appointments-api:prod
-    env_file:
-      - .env
-    command: gunicorn -b 0.0.0.0:5000 app:app
-    restart: always
-    mem_limit: 200m
+    build: ../micro-appointments-api
     ports:
       - "5055:5000"
+    volumes:
+      - ../micro-appointments-api:/app
+    restart: always
+    env_file:
+      - .env
+    environment:
+      - FLASK_APP=app.py
+      - FLASK_ENV=development
+    command: gunicorn -b 0.0.0.0:5000 app:app
+    stdin_open: true
+    tty: true
     networks:
       minha-rede:
         aliases:
           - micro-appointments
 
   micro-queue-api:
-    build:
-      context: ../micro-queue-api
-    image: micro-queue-api:prod
-    env_file:
-      - .env
-    command: gunicorn -b 0.0.0.0:5000 app:app
-    restart: always
-    mem_limit: 150m
+    build: ../micro-queue-api
     ports:
       - "5053:5000"
+    volumes:
+      - ../micro-queue-api:/app
+    restart: always
+    env_file:
+      - .env
+    environment:
+      - FLASK_APP=app.py
+      - FLASK_ENV=development
+      - MICRO_APPOINTMENTS_URL=http://micro-appointments:5000
+    command: gunicorn -b 0.0.0.0:5000 app:app
+    stdin_open: true
+    tty: true
     networks:
       minha-rede:
         aliases:
@@ -69,13 +97,12 @@ services:
     build:
       context: ../app
       dockerfile: Dockerfile
-    image: app-frontend:prod
-    env_file:
-      - .env
-    restart: always
-    mem_limit: 250m
+    image: app-frontend
+    container_name: app-frontend
     ports:
       - "8080:80"
+    depends_on:
+      - gateway-api
     networks:
       minha-rede:
         aliases:
