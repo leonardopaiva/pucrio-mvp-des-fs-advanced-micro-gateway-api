@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+  gateway-api:
+    build:
+      context: ../gateway-api
+    image: gateway-api:prod
+    env_file:
+      - .env.production
+    command: gunicorn -w 2 -b 0.0.0.0:5000 app:app
+    restart: always
+    mem_limit: 300m
+    ports:
+      - "5050:5000"
+    networks:
+      - minha-rede
+
+  micro-auth-api:
+    build:
+      context: ../micro-auth-api
+    image: micro-auth-api:prod
+    env_file:
+      - .env.production
+    command: gunicorn -w 1 -b 0.0.0.0:5000 app:app
+    restart: always
+    mem_limit: 150m
+    ports:
+      - "5052:5000"
+    networks:
+      - minha-rede
+
+  micro-appointments-api:
+    build:
+      context: ../micro-appointments-api
+    image: micro-appointments-api:prod
+    env_file:
+      - .env.production
+    command: gunicorn -w 1 -b 0.0.0.0:5000 app:app
+    restart: always
+    mem_limit: 200m
+    ports:
+      - "5055:5000"
+    networks:
+      - minha-rede
+
+  micro-queue-api:
+    build:
+      context: ../micro-queue-api
+    image: micro-queue-api:prod
+    env_file:
+      - .env.production
+    command: gunicorn -w 1 -b 0.0.0.0:5000 app:app
+    restart: always
+    mem_limit: 150m
+    ports:
+      - "5053:5000"
+    networks:
+      - minha-rede
+
+  frontend:
+    build:
+      context: ../app
+      dockerfile: Dockerfile
+    image: app-frontend:prod
+    env_file:
+      - .env.production
+    restart: always
+    mem_limit: 250m
+    ports:
+      - "8080:80"
+    networks:
+      - minha-rede
+
+networks:
+  minha-rede:
+    driver: bridge
